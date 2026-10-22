@@ -1,0 +1,210 @@
+{
+  "title": "Problem Annotation for Errors and Slowdowns - v2",
+  "description": "Annotates Davis problems with an agentic AI root-cause explanation, once 10 minutes after opening and once on close.",
+  "isPrivate": false,
+  "schemaVersion": 4,
+  "trigger": {
+    "eventTrigger": {
+      "isActive": true,
+      "triggerConfiguration": {
+        "type": "davis-problem",
+        "value": {
+          "triggerOn": "open-and-close",
+          "categories": {
+            "error": true,
+            "slowdown": true,
+            "availability": true
+          },
+          "entityTags": {},
+          "customFilter": "not (matchesPhrase(event.name,\"Out-of-memory kills\")) and\nnot (matchesPhrase(event.name,\"backoff\")) ",
+          "analysisReady": true,
+          "onProblemClose": true,
+          "entityTagsMatch": "all",
+          "severityThreshold": 3,
+          "triggerOnUpdateFields": [],
+          "problemOpenDuration": null
+        }
+      }
+    }
+  },
+  "result": null,
+  "type": "STANDARD",
+  "input": {},
+  "hourlyExecutionLimit": 1000,
+  "guide": null,
+  "tasks": {
+    "check_for_closure": {
+      "name": "check_for_closure",
+      "input": {
+        "query": "fetch dt.davis.events, from: -15m\n| filter display_id == \"{{event().display_id}}\"\n| filter event.status == \"CLOSED\"\n| summarize closedcount = count()"
+      },
+      "action": "dynatrace.automations:execute-dql-query",
+      "position": {
+        "x": 0,
+        "y": 1
+      },
+      "conditions": {
+        "else": "SKIP",
+        "custom": "{{event()[\"event.status_transition\"] != \"RESOLVED\"}}",
+        "states": {}
+      },
+      "description": "Make use of Dynatrace Grail data in your workflow.",
+      "waitBefore": 600,
+      "predecessors": []
+    },
+    "comment_on_problem": {
+      "name": "comment_on_problem",
+      "input": {
+        "eventName": "Workflow investigating root cause",
+        "problemId": "{{event()[\"event.id\"]}}",
+        "annotationSource": "Workflow automation",
+        "eventDescription": "This response is based on data after 10 minutes of evolution. It may not be representative of a long lived problem.\n\n{{result(\"get_problem_explanation\")[\"text\"]}}"
+      },
+      "action": "dynatrace.davis.problems:annotate-and-link",
+      "position": {
+        "x": -1,
+        "y": 3
+      },
+      "conditions": {
+        "states": {
+          "get_problem_explanation": "OK"
+        }
+      },
+      "description": "Creates an annotation comment on a problem.",
+      "predecessors": [
+        "get_problem_explanation"
+      ]
+    },
+    "comment_on_problem_1": {
+      "name": "comment_on_problem_1",
+      "input": {
+        "eventName": "Workflow investigating root cause",
+        "problemId": "{{event()[\"event.id\"]}}",
+        "annotationSource": "Workflow automation",
+        "eventDescription": "This response was built on closure of the problem. \n\n{{result(\"get_problem_explanation_1\")[\"text\"]}}"
+      },
+      "action": "dynatrace.davis.problems:annotate-and-link",
+      "position": {
+        "x": 1,
+        "y": 3
+      },
+      "conditions": {
+        "states": {
+          "get_problem_explanation_1": "OK"
+        }
+      },
+      "description": "Creates an annotation comment on a problem.",
+      "predecessors": [
+        "get_problem_explanation_1"
+      ]
+    },
+    "get_problem_explanation": {
+      "name": "get_problem_explanation",
+      "input": {
+        "prompt": "You are a senior application support engineer with deep expertise in Dynatrace problem analysis, distributed systems troubleshooting, and root cause investigation across application, infrastructure, and network layers.\n\nI am investigating Dynatrace problem {{event().display_id}} and need a complete contextual explanation of it. When you pull logs, errors, and exceptions, do not limit the scope to the immediate failing component — retrieve and correlate signals from the underlying infrastructure (hosts, containers, processes), connected services (upstream and downstream dependencies), and related network devices. Missing context from any of these layers can hide the actual cause, so treat comprehensive coverage as a hard requirement and explicitly flag any layer where data was unavailable or inconclusive.\n\nProduce an explanation that covers:\n\n- Impact summary: what is affected, severity, duration, and the scope of affected entities (services, hosts, processes, applications).\n- Root cause entity: the entity Dynatrace identifies (or the most likely candidate if unclear), with the relevant warning and error logs, exceptions, and stack traces from that entity and its underlying process.\n- Impacted services: warning and error logs, exceptions, and anomalous metrics from each impacted service and its underlying process, including how the failure propagates across the dependency chain.\n- Infrastructure and network context: any correlated signals from hosts, containers, process groups, or network devices (latency, packet loss, saturation, restarts, resource exhaustion) that support or complicate the root cause hypothesis.\n- End-user impact (only if a frontend application is affected): user actions failing, geographies or segments affected, error rates, and observable symptoms from real-user or synthetic monitoring.\n- Next steps to mitigate: include only when the evidence points to a clear path forward. Keep these brief and concrete (e.g., restart a specific process, roll back a deployment, scale a resource, fail over a dependency). If the evidence is ambiguous, say so and state what additional data would resolve the ambiguity rather than guessing.\n\nQuote or reference specific log lines, exception types, and metric values where they support the conclusion. Distinguish clearly between what the data confirms, what it suggests, and what remains unverified.",
+        "instruction": "keep the response within 2000 characters",
+        "outputFormat": "",
+        "selectedTools": {
+          "create-dql::2": true,
+          "execute-dql::3": true,
+          "explain-dql::4": true,
+          "get-entity-id::9": true,
+          "find-documents::5": true,
+          "query-problems::16": true,
+          "get-entity-name::10": true,
+          "ask-dynatrace-docs::1": true,
+          "get-problem-by-id::12": true,
+          "timeseries-forecast::19": true,
+          "log-pattern-extractor::15": true,
+          "adaptive-anomaly-detector::0": true,
+          "static-threshold-analyzer::18": true,
+          "find-troubleshooting-guides::6": true,
+          "get-security-event-details::13": true,
+          "get-security-events-summary::14": true,
+          "get-dynatrace-vulnerabilities::8": true,
+          "timeseries-novelty-detection::20": true,
+          "get-dynatrace-compliance-findings::7": true,
+          "get-events-for-kubernetes-cluster::11": true,
+          "seasonal-baseline-anomaly-detector::17": true
+        },
+        "supplementary": "",
+        "conversationId": "",
+        "selectedServers": [
+          {
+            "name": "dynatrace-mcp",
+            "type": "dtp-mcp-gateway"
+          }
+        ]
+      },
+      "action": "dynatrace.davis.copilot.workflow.actions:agent-operator",
+      "position": {
+        "x": -1,
+        "y": 2
+      },
+      "conditions": {
+        "custom": "{{event()[\"event.status_transition\"] != \"RESOLVED\" and result(\"check_for_closure\")[\"records\"][0][\"closedcount\"] == \"0\"}}",
+        "states": {
+          "check_for_closure": "SUCCESS"
+        }
+      },
+      "description": "Prompt the Dynatrace Intelligence agentic AI with access to tools to analyze data and provide insights",
+      "predecessors": [
+        "check_for_closure"
+      ]
+    },
+    "get_problem_explanation_1": {
+      "name": "get_problem_explanation_1",
+      "input": {
+        "prompt": "You are a senior application support engineer with deep expertise in Dynatrace problem analysis, distributed systems troubleshooting, and root cause investigation across application, infrastructure, and network layers.\n\nI am investigating Dynatrace problem {{event().display_id}} and need a complete contextual explanation of it. When you pull logs, errors, and exceptions, do not limit the scope to the immediate failing component — retrieve and correlate signals from the underlying infrastructure (hosts, containers, processes), connected services (upstream and downstream dependencies), and related network devices. Missing context from any of these layers can hide the actual cause, so treat comprehensive coverage as a hard requirement and explicitly flag any layer where data was unavailable or inconclusive.\n\nProduce an explanation that covers:\n\n- Impact summary: what is affected, severity, duration, and the scope of affected entities (services, hosts, processes, applications).\n- Root cause entity: the entity Dynatrace identifies (or the most likely candidate if unclear), with the relevant warning and error logs, exceptions, and stack traces from that entity and its underlying process.\n- Impacted services: warning and error logs, exceptions, and anomalous metrics from each impacted service and its underlying process, including how the failure propagates across the dependency chain.\n- Infrastructure and network context: any correlated signals from hosts, containers, process groups, or network devices (latency, packet loss, saturation, restarts, resource exhaustion) that support or complicate the root cause hypothesis.\n- End-user impact (only if a frontend application is affected): user actions failing, geographies or segments affected, error rates, and observable symptoms from real-user or synthetic monitoring.\n- Next steps to mitigate: include only when the evidence points to a clear path forward. Keep these brief and concrete (e.g., restart a specific process, roll back a deployment, scale a resource, fail over a dependency). If the evidence is ambiguous, say so and state what additional data would resolve the ambiguity rather than guessing.\n\nQuote or reference specific log lines, exception types, and metric values where they support the conclusion. Distinguish clearly between what the data confirms, what it suggests, and what remains unverified.",
+        "instruction": "keep the response within 2000 characters",
+        "outputFormat": "",
+        "selectedTools": {
+          "create-dql::2": true,
+          "execute-dql::3": true,
+          "explain-dql::4": true,
+          "get-entity-id::9": true,
+          "find-documents::5": true,
+          "query-problems::16": true,
+          "get-entity-name::10": true,
+          "ask-dynatrace-docs::1": true,
+          "get-problem-by-id::12": true,
+          "timeseries-forecast::19": true,
+          "log-pattern-extractor::15": true,
+          "adaptive-anomaly-detector::0": true,
+          "static-threshold-analyzer::18": true,
+          "find-troubleshooting-guides::6": true,
+          "get-security-event-details::13": true,
+          "get-security-events-summary::14": true,
+          "get-dynatrace-vulnerabilities::8": true,
+          "timeseries-novelty-detection::20": true,
+          "get-dynatrace-compliance-findings::7": true,
+          "get-events-for-kubernetes-cluster::11": true,
+          "seasonal-baseline-anomaly-detector::17": true
+        },
+        "supplementary": "",
+        "conversationId": "",
+        "selectedServers": [
+          {
+            "name": "dynatrace-mcp",
+            "type": "dtp-mcp-gateway"
+          }
+        ]
+      },
+      "action": "dynatrace.davis.copilot.workflow.actions:agent-operator",
+      "position": {
+        "x": 1,
+        "y": 2
+      },
+      "conditions": {
+        "custom": "{{event()[\"event.status_transition\"] == \"RESOLVED\"}}",
+        "states": {
+          "check_for_closure": "ANY"
+        }
+      },
+      "description": "Prompt the Dynatrace Intelligence agentic AI with access to tools to analyze data and provide insights",
+      "predecessors": [
+        "check_for_closure"
+      ]
+    }
+  }
+}
