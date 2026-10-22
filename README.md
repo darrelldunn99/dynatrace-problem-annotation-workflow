@@ -4,7 +4,9 @@ A Dynatrace workflow that asks the Dynatrace Intelligence incident agent to expl
 
 Originally written by Sam Bernardy, Solutions Architect at Dynatrace. See [Credits](#credits).
 
-> **Status:** the [changes from the original](#changes-from-the-original) are applied and saved on a test environment, but the latest two (the `run-agent` switch and the trigger fixes) haven't been confirmed by a live problem-triggered run yet. This note will be updated once they have.
+> **Status:** verified on a test environment on Oct 22, 2026. A "Failure rate increase" problem with no `event.severity` started the workflow on close; the incident agent queried live data and the close branch posted its annotation. The annotation named the affected service and namespace, quoted error rates and p95 latency, and cited a node at 93% disk usage and a crash-looping pod on the same node. It also rated the root cause inconclusive, with the evidence for that call.
+>
+> **Known gaps:** the agent doesn't keep to the prompt's 2,000-character limit (that annotation was about 4,700 characters), and the annotation can start with a line of the agent's own narration ("Let me compile the final report"). Neither stops the workflow.
 
 ## How it works
 
