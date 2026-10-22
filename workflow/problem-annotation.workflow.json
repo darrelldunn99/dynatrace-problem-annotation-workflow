@@ -20,7 +20,7 @@
           "analysisReady": true,
           "onProblemClose": true,
           "entityTagsMatch": "all",
-          "severityThreshold": 3,
+          "severityThreshold": null,
           "triggerOnUpdateFields": [],
           "problemOpenDuration": null
         }
@@ -45,7 +45,7 @@
       },
       "conditions": {
         "else": "SKIP",
-        "custom": "{{event()[\"event.status_transition\"] != \"RESOLVED\"}}",
+        "custom": "{{event()[\"event.status_transition\"] not in [\"RESOLVED\", \"CLOSED\"]}}",
         "states": {}
       },
       "description": "Make use of Dynatrace Grail data in your workflow.",
@@ -114,7 +114,7 @@
         "y": 2
       },
       "conditions": {
-        "custom": "{{event()[\"event.status_transition\"] != \"RESOLVED\" and result(\"check_for_closure\")[\"records\"][0][\"closedcount\"] == \"0\"}}",
+        "custom": "{{event()[\"event.status_transition\"] not in [\"RESOLVED\", \"CLOSED\"] and result(\"check_for_closure\")[\"records\"][0][\"closedcount\"] == \"0\"}}",
         "states": {
           "check_for_closure": "SUCCESS"
         }
@@ -140,7 +140,7 @@
         "y": 2
       },
       "conditions": {
-        "custom": "{{event()[\"event.status_transition\"] == \"RESOLVED\"}}",
+        "custom": "{{event()[\"event.status_transition\"] in [\"RESOLVED\", \"CLOSED\"]}}",
         "states": {
           "check_for_closure": "ANY"
         }
