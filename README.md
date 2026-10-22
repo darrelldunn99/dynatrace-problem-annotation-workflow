@@ -131,3 +131,7 @@ workflow/problem-annotation.workflow.json   the workflow, with environment-speci
 scripts/list-ai-actions.sh                  lists the Dynatrace Intelligence actions on an environment
 scripts/watch-event-runs.sh                 waits for the next problem-triggered run and prints its log
 ```
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
