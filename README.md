@@ -2,6 +2,8 @@
 
 A Dynatrace workflow that asks the Dynatrace Intelligence agentic AI to explain a Davis problem, then writes the answer back onto the problem as an annotation. It runs twice per problem: once 10 minutes after the problem opens, and again when it closes.
 
+Originally written by Sam Bernardy, Solutions Architect at Dynatrace. See [Credits](#credits).
+
 ## How it works
 
 ```
@@ -131,6 +133,10 @@ workflow/problem-annotation.workflow.json   the workflow, with environment-speci
 scripts/list-ai-actions.sh                  lists the Dynatrace Intelligence actions on an environment
 scripts/watch-event-runs.sh                 waits for the next problem-triggered run and prints its log
 ```
+
+## Credits
+
+The workflow, its trigger design and the root-cause prompt were originally written by **Sam Bernardy**, Solutions Architect at Dynatrace. This repository adds the update to the Dynatrace Intelligence `prompt-agentic-ai` action, the documentation and the helper scripts.
 
 ## License
 
